@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diagnostica — Test Atletici</title>
+<style>
+  html,body{margin:0;background:#07120C;color:#d8f5e4;
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+  #wrap{padding:14px 14px 40px}
+  h1{font-size:16px;color:#25E27F;margin:0 0 4px}
+  .sub{color:#8fb8a0;margin:0 0 12px;font-size:12px}
+  .row{padding:5px 0;border-bottom:1px solid #14361f;white-space:pre-wrap;word-break:break-word}
+  .ok{color:#25E27F}
+  .err{color:#ff7a7a;font-weight:700}
+  .info{color:#9ad}
+  .bar{position:sticky;top:0;background:#07120C;padding:10px 0;display:flex;gap:8px;flex-wrap:wrap;
+    border-bottom:2px solid #25E27F;margin-bottom:8px}
+  button{background:#25E27F;color:#04120a;border:0;padding:10px 16px;border-radius:10px;
+    font-weight:700;font-size:14px}
+  button.sec{background:#14361f;color:#d8f5e4}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>Diagnostica — Test Atletici</h1>
+  <p class="sub">Questa pagina prova a caricare l'app e mostra a schermo cosa succede. Copia il risultato e inviamelo.</p>
+  <div class="bar">
+    <button onclick="copyLog()">Copia risultato</button>
+    <button class="sec" onclick="location.reload()">Ricarica</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<!-- contenitore che l'app userà per disegnarsi -->
+<main id="app" style="display:none"></main>
+
+<script>
+(function(){
+  var logEl = document.getElementById('log');
+  function line(msg, cls){
+    var d = document.createElement('div');
+    d.className = 'row' + (cls ? ' ' + cls : '');
+    d.textContent = msg;
+    logEl.appendChild(d);
+    return d;
+  }
+  window.__diagLine = line;
+
+  window.copyLog = function(){
+    var txt = logEl.innerText;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(
+        function(){ line('✓ Risultato copiato: incollalo nel messaggio.', 'ok'); },
+        function(){ line('ⓘ Copia non riuscita: fai uno screenshot.', 'info'); }
+      );
+    } else {
+      line('ⓘ Copia non disponibile: fai uno screenshot di questa schermata.', 'info');
+    }
+  };
+
+  // 1) intercetta OGNI errore JavaScript e lo stampa
+  window.onerror = function(message, source, lineno, colno, error){
+    var file = (source || '').split('/').pop() || '?';
+    line('✗ ERRORE JS: ' + message, 'err');
+    line('   in ' + file + '  (riga ' + lineno + ', col ' + colno + ')', 'err');
+    if(error && error.stack){ line('   ' + error.stack, 'err'); }
+    return false;
+  };
+  window.addEventListener('unhandledrejection', function(e){
+    var r = e.reason;
+    line('✗ PROMISE non gestita: ' + ((r && (r.message || r)) || 'sconosciuto'), 'err');
+    if(r && r.stack){ line('   ' + r.stack, 'err'); }
+  });
+
+  // 2) pulisci eventuali service worker / cache vecchi, così testiamo i file freschi
+  try{
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(function(rs){
+        rs.forEach(function(r){ r.unregister(); });
+        if(rs.length) line('ⓘ Rimossi ' + rs.length + ' service worker precedenti (ricarica per pulizia totale).', 'info');
+      });
+    }
+    if(window.caches && caches.keys){
+      caches.keys().then(function(keys){ keys.forEach(function(k){ caches.delete(k); }); });
+    }
+  }catch(e){ line('ⓘ Pulizia cache non riuscita: ' + e.message, 'info'); }
+
+  line('Dispositivo: ' + navigator.userAgent, 'info');
+  line('Indirizzo: ' + location.href, 'info');
+  line('———', 'info');
+
+  // 3) carica i file dell'app UNO ALLA VOLTA (con anti-cache) e riporta l'esito di ciascuno
+  var files = ['js/data.js','js/audio.js','js/engines.js','js/calc.js','js/app.js'];
+  var i = 0;
+  function loadNext(){
+    if(i >= files.length){ verify(); return; }
+    var f = files[i];
+    var s = document.createElement('script');
+    s.src = './' + f + '?v=' + Date.now();      // aggira la cache
+    s.onload = function(){ line('✓ caricato: ' + f, 'ok'); i++; loadNext(); };
+    s.onerror = function(){ line('✗ NON caricato (404/blocco rete): ' + f, 'err'); i++; loadNext(); };
+    document.body.appendChild(s);
+  }
+
+  function has(name, val){
+    if(val !== undefined && val !== null){ line('✓ ' + name + ' presente', 'ok'); return true; }
+    line('✗ ' + name + ' MANCANTE', 'err'); return false;
+  }
+
+  function verify(){
+    line('——— verifica dati ———', 'info');
+    if(has('APP_DATA (protocolli)', window.APP_DATA) && window.APP_DATA){
+      try{
+        var t = window.APP_DATA.TESTS;
+        line('   test caricati: ' + (t ? t.length : '??'), t && t.length ? 'ok' : 'err');
+      }catch(e){ line('   errore leggendo i test: ' + e.message, 'err'); }
+    }
+    has('ENGINES (motori test)', window.ENGINES);
+    has('CALC (calcolatori)', window.CALC);
+    has('Audio (motore audio)', window.Audio);
+
+    // 4) l'app.js in fondo chiama renderHome() da solo: controllo se ha disegnato
+    line('——— verifica schermata ———', 'info');
+    var appEl = document.getElementById('app');
+    var empty = !appEl || appEl.innerHTML.trim() === '';
+    if(empty){
+      line('✗ La schermata dell\'app è VUOTA: il rendering NON è avvenuto.', 'err');
+      line('   → Se qui sopra NON vedi un "ERRORE JS" rosso, il blocco è dentro renderHome():', 'err');
+      line('     forzo ora una chiamata manuale per catturarlo…', 'info');
+      try{
+        if(typeof window.renderHome === 'function'){ window.renderHome(); line('   renderHome() chiamato senza errori', 'ok'); }
+        else { line('   renderHome non è esposto su window (normale): l\'errore è già stato mostrato sopra.', 'info'); }
+      }catch(e){
+        line('   ✗ renderHome ha lanciato: ' + e.message, 'err');
+        if(e.stack) line('   ' + e.stack, 'err');
+      }
+    } else {
+      appEl.style.display = '';
+      line('✓ La schermata si è disegnata (l\'app funziona).', 'ok');
+      line('   Se la vedevi nera, il problema era la vecchia cache: ora dovrebbe apparire sotto.', 'ok');
+    }
+    line('——— fine ———', 'info');
+    line('Premi "Copia risultato" e incolla il testo nel messaggio.', 'info');
+  }
+
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadNext); }
+  else { loadNext(); }
+})();
+</script>
+</body>
+</html>
