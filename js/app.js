@@ -1,7 +1,9 @@
 /* =============================================================================
    app.js — Interfaccia, navigazione, esecuzione dei test, salvataggio risultati
 ============================================================================= */
-const { TESTS, NORME } = window.APP_DATA;
+/* TESTS e NORME sono già variabili globali definite in data.js:
+   in un browser tutti gli <script> condividono lo stesso scope, quindi
+   qui NON vanno ridichiarati (causerebbe "duplicate variable"). */
 const $ = sel => document.querySelector(sel);
 const app = $('#app');
 
