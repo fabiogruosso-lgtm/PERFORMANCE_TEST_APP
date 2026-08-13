@@ -386,11 +386,16 @@ function renderRepeatedFields(t){
       <div class="brand">${t.icon} ${t.nome}</div><span></span></header>
     <div class="wrap">
       <p class="lead">Inserisci il tempo di ogni sprint.</p>
-      <div class="form-grid">${rows}${extra}</div>
+      <div class="form-grid">
+        <label class="field"><span>Atleta</span>
+          <input id="f-atleta" type="text" autocapitalize="words" value="${escapeHtml(PREFS.atleta||'')}" placeholder="Nome e cognome"></label>
+        ${rows}${extra}
+      </div>
       <button class="primary-btn big" id="calc">Calcola</button>
     </div>`;
   $('#back').onclick=()=>go('run', t.id);
   $('#calc').onclick=()=>{
+    PREFS.atleta = ($('#f-atleta').value||'').trim(); savePrefs(PREFS);
     const times=[]; document.querySelectorAll('[data-rep]').forEach(inp=> times[+inp.dataset.rep]=+inp.value||0);
     const values={ times }; if(t.id==='rast'){ values.peso=$('#peso').value; PREFS.peso=values.peso; savePrefs(PREFS); }
     const res = CALC.runCalc(t, values);
@@ -409,12 +414,15 @@ function renderResultForm(t, prefill, hint){
     <div class="wrap">
       ${hint?`<p class="lead">${hint}</p>`:''}
       <div class="form-grid">
+        <label class="field"><span>Atleta</span>
+          <input id="f-atleta" type="text" autocapitalize="words" value="${escapeHtml(PREFS.atleta||'')}" placeholder="Nome e cognome"></label>
         ${fields.map(f=>fieldHtml(f, prefill[f.key])).join('')}
       </div>
       <button class="primary-btn big" id="calc">Calcola e mostra</button>
     </div>`;
   $('#back').onclick=()=>go('test', t.id);
   $('#calc').onclick=()=>{
+    PREFS.atleta = ($('#f-atleta').value||'').trim();
     const values={};
     fields.forEach(f=>{
       const el=$('#f-'+f.key);
@@ -519,10 +527,18 @@ function renderStorico(){
 
 function exportCSV(h){
   if(!h.length){ alert('Storico vuoto.'); return; }
-  const rows=[['data','atleta','test','risultato','valore','unita']];
-  h.forEach(r=> rows.push([r.data, r.atleta, r.testName, r.label, r.valore, r.unita]));
-  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+  /* Formato pensato per l'import nella piattaforma (PSL):
+     - data in ISO 8601 (ordinabile, senza ambiguità gg/mm)
+     - test_id stabile (chiave macchina), test = nome leggibile
+     - dettagli = righe secondarie compattate "label=valore | label=valore"
+     I campi mancanti restano VUOTI, mai 0. */
+  const rows=[['data_iso','atleta','test_id','test','etichetta','valore','unita','dettagli']];
+  h.forEach(r=> rows.push([
+    r.data, r.atleta||'', r.testId||'', r.testName, r.label, r.valore, r.unita||'',
+    (r.righe||[]).map(x=>`${x.label}=${x.valore}`).join(' | ')
+  ]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(["\uFEFF"+csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='test_atletici.csv'; a.click();
   URL.revokeObjectURL(url);
 }

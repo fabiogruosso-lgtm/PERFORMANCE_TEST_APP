@@ -212,4 +212,8 @@ function runCalc(test, values){
   }
 }
 
-window.CALC = { runCalc };
+/* IMPORTANTE (scope condiviso del browser): "CALC" usato da app.js si risolve
+   sulla const qui sopra, quindi runCalc va agganciato a QUELLA, non a un
+   oggetto nuovo su window (causava: CALC.runCalc is not a function). */
+CALC.runCalc = runCalc;
+window.CALC = CALC;
