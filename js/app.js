@@ -1,5 +1,13 @@
 /* =============================================================================
    app.js — Interfaccia, navigazione, esecuzione dei test, salvataggio risultati
+
+   rev. 2 (1/10/2026) — BONIFICA: età, peso e sesso NON si ricordano più da un
+   atleta all'altro (finivano sul test dell'atleta successivo): si scrivono
+   per ogni test e i valori già salvati sul telefono vengono cancellati
+   all'avvio; il sesso non parte da «Uomo»; i riferimenti «élite calcio»
+   (fonte da documentare) solo per stime di adulti; la velocita' raggiunta nel
+   Beep test e nel 30-15 arriva nel modulo anche con i decimali (prima la
+   virgola la faceva sparire). rev. 1 — prima versione.
 ============================================================================= */
 /* TESTS e NORME sono già variabili globali definite in data.js:
    in un browser tutti gli <script> condividono lo stesso scope, quindi
@@ -17,6 +25,11 @@ function loadPrefs(){ try{ return JSON.parse(localStorage.getItem(PREF_KEY))||{v
 function savePrefs(p){ localStorage.setItem(PREF_KEY, JSON.stringify(p)); }
 
 let PREFS = loadPrefs();
+/* (1/10) Età, peso e sesso «predefiniti» non esistono più: se un telefono li
+   ha ancora in memoria dalla versione precedente, si cancellano. */
+if('eta' in PREFS || 'peso' in PREFS || 'sesso' in PREFS){
+  delete PREFS.eta; delete PREFS.peso; delete PREFS.sesso; savePrefs(PREFS);
+}
 window.Audio.voiceOn = PREFS.voice;
 let LIVE = null;          // stato live del test in corso
 let RUNNER = null;        // istanza Runner attiva
@@ -63,7 +76,7 @@ function renderHome(){
           </div>
         </section>`).join('')}
       <button class="ghost-btn" id="btn-storico">Storico risultati (${loadHistory().length})</button>
-      <p class="foot-note">Le stime (VO₂max, potenza, % grasso) sono indicative e valgono soprattutto nel confronto longitudinale dello stesso atleta.</p>
+      <p class="foot-note">Le stime (VO₂max, potenza, massimale, % grasso) compaiono solo se l\u2019equazione vale per l\u2019età dell\u2019atleta: scrivila a ogni test. Nei ragazzi si registra la misura.</p>
     </div>`;
   $('#atleta').addEventListener('input', e=>{ PREFS.atleta=e.target.value; savePrefs(PREFS); });
   document.querySelectorAll('.test-card').forEach(b=> b.onclick=()=>go('test', b.dataset.id));
@@ -239,9 +252,9 @@ function finishBeep(t, totalReached){
     const dist = LIVE? (LIVE.phase==='run'? Math.max(0,LIVE.dist-40) : LIVE.dist) : 0;
     prefill={ distanza: dist };
   } else if(t.id==='ift3015'){
-    prefill={ vift: LIVE? fmt1(LIVE.speed):'', eta:PREFS.eta||'', peso:PREFS.peso||'', sesso:PREFS.sesso||'M' };
+    prefill={ vift: LIVE? round1(LIVE.speed):'' };
   } else if(t.id==='leger'){
-    prefill={ velocita: LIVE? fmt1(LIVE.speed):'', eta:PREFS.eta||'' };
+    prefill={ velocita: LIVE? round1(LIVE.speed):'' };
   }
   renderResultForm(t, prefill, 'Test terminato. Correggi il valore raggiunto dall\u2019atleta e calcola.');
 }
@@ -380,7 +393,7 @@ function renderRepeatedFields(t){
     <label class="field"><span>Sprint ${i+1} (s)</span>
       <input type="number" step="0.01" inputmode="decimal" data-rep="${i}"></label>`).join('');
   const extra = t.id==='rast' ? `<label class="field"><span>Peso corporeo (kg)</span>
-      <input id="peso" type="number" step="0.1" inputmode="decimal" value="${PREFS.peso||''}"></label>`:'';
+      <input id="peso" type="number" step="0.1" inputmode="decimal" value=""></label>`:'';
   app.innerHTML = `
     <header class="topbar"><button class="icon-btn" id="back">‹</button>
       <div class="brand">${t.icon} ${t.nome}</div><span></span></header>
@@ -397,8 +410,9 @@ function renderRepeatedFields(t){
   $('#calc').onclick=()=>{
     PREFS.atleta = ($('#f-atleta').value||'').trim(); savePrefs(PREFS);
     const times=[]; document.querySelectorAll('[data-rep]').forEach(inp=> times[+inp.dataset.rep]=+inp.value||0);
-    const values={ times }; if(t.id==='rast'){ values.peso=$('#peso').value; PREFS.peso=values.peso; savePrefs(PREFS); }
+    const values={ times }; if(t.id==='rast'){ values.peso=$('#peso').value; }
     const res = CALC.runCalc(t, values);
+    if(!res){ alert(t.id==='rast' ? 'Inserisci i tempi e il peso dell\u2019atleta.' : 'Inserisci i tempi.'); return; }
     showResult(t, res);
   };
 }
@@ -428,8 +442,7 @@ function renderResultForm(t, prefill, hint){
       const el=$('#f-'+f.key);
       values[f.key]= el ? el.value : '';
     });
-    // memorizza dati anagrafici comodi
-    if(values.eta) PREFS.eta=values.eta; if(values.peso) PREFS.peso=values.peso; if(values.sesso) PREFS.sesso=values.sesso;
+    // (1/10) età, peso e sesso NON si memorizzano: valgono solo per questo test
     savePrefs(PREFS);
     const res = CALC.runCalc(t, values);
     if(!res){ alert('Inserisci i valori necessari.'); return; }
@@ -439,12 +452,13 @@ function renderResultForm(t, prefill, hint){
 
 /* campi di default per i test a beep/timer (in fase di risultato) */
 function defaultFields(t){
-  if(t.id==='yoyo_ir1'||t.id==='yoyo_ir2') return [{key:'distanza',label:'Distanza totale',unit:'m'}];
-  if(t.id==='cooper') return [{key:'distanza',label:'Distanza in 12 min',unit:'m'}];
+  const ETA = {key:'eta',label:'Età',unit:'anni compiuti',optional:true};
+  if(t.id==='yoyo_ir1'||t.id==='yoyo_ir2') return [{key:'distanza',label:'Distanza totale',unit:'m'}, ETA];
+  if(t.id==='cooper') return [{key:'distanza',label:'Distanza in 12 min',unit:'m'}, ETA];
   if(t.id==='ift3015') return [
     {key:'vift',label:'VIFT (ultimo stadio)',unit:'km/h'},
-    {key:'eta',label:'Età',unit:'anni'},{key:'peso',label:'Peso',unit:'kg'},{key:'sesso',label:'Sesso',type:'sex'}];
-  if(t.id==='leger') return [{key:'velocita',label:'Velocità ultimo livello',unit:'km/h'},{key:'eta',label:'Età',unit:'anni'}];
+    ETA,{key:'peso',label:'Peso',unit:'kg',optional:true},{key:'sesso',label:'Sesso',type:'sex'}];
+  if(t.id==='leger') return [{key:'velocita',label:'Velocità ultimo livello',unit:'km/h'}, ETA];
   if(t.id==='sprint') return t.splits.map(m=>({key:String(m),label:`${m} m`,unit:'s'}));
   if(t.id==='cod505') return [{key:'5',label:'Tempo 505',unit:'s'},{key:'lin10',label:'10 m lineare (opz.)',unit:'s',optional:true}];
   return [];
@@ -452,9 +466,11 @@ function defaultFields(t){
 
 function fieldHtml(f, value){
   if(f.type==='sex'){
-    const v=value||PREFS.sesso||'M';
+    // (1/10) nessun sesso predefinito: si sceglie per ogni atleta
+    const v=value||'';
     return `<label class="field"><span>${f.label}</span>
       <select id="f-${f.key}">
+        <option value="" ${v===''?'selected':''}>— scegli —</option>
         <option value="M" ${v==='M'?'selected':''}>Uomo</option>
         <option value="F" ${v==='F'?'selected':''}>Donna</option>
       </select></label>`;
@@ -495,9 +511,13 @@ function showResult(t, res){
   };
 }
 
+/* (1/10) Riferimenti «élite calcio» adulto, fonte ancora da documentare: si
+   mostrano solo a chi ha 18 anni o più, mai ai ragazzi né a età non indicata. */
 function normHint(t, res){
-  if(res.unita==='ml/kg/min'){ return `Rif. élite calcio — ${NORME.vo2max.uomo} · ${NORME.vo2max.donna}`; }
-  if(t.id==='ift3015' && res.unita==='km/h'){ return `Rif. VIFT — ${NORME.vift.uomo} · ${NORME.vift.donna}`; }
+  if(!CALC.adulto(res.eta===undefined ? null : res.eta)) return '';
+  const nota = ' (indicativo, fonte da documentare)';
+  if(res.vo2!=null){ return `Rif. élite calcio adulto — ${NORME.vo2max.uomo} · ${NORME.vo2max.donna}${nota}`; }
+  if(t.id==='ift3015'){ return `Rif. VIFT adulti — ${NORME.vift.uomo} · ${NORME.vift.donna}${nota}`; }
   return '';
 }
 
@@ -555,19 +575,13 @@ function renderImpostazioni(){
       </label>
       <div class="info-block note"><h3>Audio in campo</h3>
         <p>Collega una cassa Bluetooth e alza il volume. Su iPhone tieni lo schermo acceso: quando è bloccato l\u2019audio può interrompersi.</p></div>
-      <div class="info-block"><h3>Dati anagrafici predefiniti</h3>
-        <div class="form-grid">
-          <label class="field"><span>Età (anni)</span><input id="eta" type="number" value="${PREFS.eta||''}"></label>
-          <label class="field"><span>Peso (kg)</span><input id="peso" type="number" value="${PREFS.peso||''}"></label>
-        </div>
-      </div>
+      <div class="info-block"><h3>Età, peso e sesso</h3>
+        <p>Si scrivono a ogni test, per l\u2019atleta che lo esegue: l\u2019app non li ricorda, perché finirebbero sul test dell\u2019atleta successivo. Senza età le stime non si calcolano; la misura si salva comunque.</p></div>
       <button class="ghost-btn danger-text" id="clear">Cancella tutto lo storico</button>
-      <p class="foot-note">Versione 1.0 · Dati salvati solo su questo dispositivo (nessun invio in rete).</p>
+      <p class="foot-note">Versione 1.1 · Dati salvati solo su questo dispositivo (nessun invio in rete).</p>
     </div>`;
   $('#back').onclick=()=>go('home');
   $('#voice').onchange=e=>{ PREFS.voice=e.target.checked; window.Audio.voiceOn=PREFS.voice; savePrefs(PREFS); };
-  $('#eta').oninput=e=>{ PREFS.eta=e.target.value; savePrefs(PREFS); };
-  $('#peso').oninput=e=>{ PREFS.peso=e.target.value; savePrefs(PREFS); };
   $('#clear').onclick=()=>{ if(confirm('Eliminare tutti i risultati salvati?')){ saveHistory([]); alert('Storico cancellato.'); } };
 }
 
@@ -609,6 +623,10 @@ function arrowDef(){ return `<defs><marker id="a" markerWidth="8" markerHeight="
 
 /* -------------------------------- Utility --------------------------------- */
 function mmss(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+/* (1/10) per i campi numerici: fmt1 scrive la virgola («8,5»), che un campo
+   type=number rifiuta e lascia VUOTO — la velocita' raggiunta non arrivava
+   mai nel modulo quando aveva i decimali. */
+function round1(v){ return Math.round(v*10)/10; }
 function fmt1(v){ const r=Math.round(v*10)/10; return Number.isInteger(r)? r : r.toString().replace('.',','); }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 

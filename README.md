@@ -109,6 +109,15 @@ Modo più semplice dal tablet:
 ## Note e limiti (onestà tecnica)
 - **Stime, non misure di laboratorio.** VO₂max, potenza e % grasso sono valori *stimati*
   con formule validate: usali soprattutto per il **confronto nel tempo dello stesso atleta**.
+- **Ogni stima solo nella sua popolazione (dalla versione 1.1, 1/10/2026).** Si scrive l'età
+  (anni compiuti) a ogni test: l'app non ricorda più età, peso e sesso da un atleta all'altro.
+  Fuori dalla popolazione su cui l'equazione è nata la stima non si calcola e si salva la misura:
+  Yo-Yo, Cooper, Sayers e 1RM dai 18 anni; 30-15 (Buchheit) fra 12 e 20 anni; Beep test 6-17 anni
+  con l'equazione dei ragazzi e 18-50 anni con −27,4 + 6,0·V (Léger 1988, eq. 3: nell'articolo è
+  stampato −24,4 per un refuso); pliche: uomini 18-61, donne 18-55. I riferimenti «élite» si
+  vedono solo per gli adulti e la loro fonte è ancora da documentare. Le stesse regole le applica
+  la piattaforma quando importa il file.
+- **Prove dei calcoli:** `node tests/calc.test.js` (nessuna dipendenza).
 - **Sprint / 505 / RSA / RAST**: i tempi sono **manuali** (tocco sullo schermo). Utile e
   ripetibile, ma meno preciso delle fotocellule/Optojump: fai più prove e fai la media.
 - **Audio a schermo bloccato (iPhone):** iOS può sospendere l'audio quando lo schermo si

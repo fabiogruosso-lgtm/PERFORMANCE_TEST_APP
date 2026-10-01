@@ -7,6 +7,11 @@
    - Cooper (1968); Jackson-Pollock (1978); Brzycki/Epley; Sayers (1999)
    Tutte le tracce audio sono GENERATE dall'app (Web Audio) a partire dai dati
    di velocità dei protocolli: nessun file audio protetto da copyright viene usato.
+
+   rev. 2 (1/10/2026): campo «Età» (anni compiuti) nei test con stima, perché
+   ogni equazione vale solo nella sua popolazione (vedi calc.js); formula del
+   Beep test con le due equazioni di Léger 1988 (6-17 anni e 18-50 anni);
+   riferimenti «élite» marcati come da documentare. rev. 1 — prima versione.
 ============================================================================= */
 
 /* --- Run-Length Encoding delle velocità (km/h) per navetta ------------------
@@ -106,7 +111,7 @@ const TESTS = [
     registra:'Ultimo livello raggiunto (e velocità km/h). Distanza = navette × 20.',
     note:'Essendo continuo (senza recupero) è meno calcio-specifico dello Yo-Yo, ma semplice ed economico.',
     startSpeed:8.5, speedStep:0.5, levelSec:60, shuttleDist:20, maxLevels:21,
-    vo2:{ formula:'VO₂max = 31.025 + 3.238·V − 3.248·età + 0.1536·età·V (Léger, V=km/h ultimo livello)',
+    vo2:{ formula:'6-17 anni: VO₂max = 31.025 + 3.238·V − 3.248·età + 0.1536·età·V · 18-50 anni: VO₂max = −27,4 + 6,0·V (Léger et al. 1988, V = km/h dell\u2019ultimo livello). Fuori da queste età nessuna stima.',
           needs:['velocita','eta'] }
   },
   {
@@ -199,9 +204,9 @@ const TESTS = [
       'Rapido contromovimento (ginocchia ~90°) seguito subito da salto verticale massimale.',
       'Atterraggio sullo stesso punto, gambe quasi estese. 3 salti: si tiene il migliore.'
     ],
-    registra:'Altezza (cm). L\u2019app stima la potenza di picco (Sayers) se inserisci il peso.',
+    registra:'Altezza (cm). Dai 18 anni, con il peso, l\u2019app stima anche la potenza di picco (Sayers).',
     note:'Un calo del CMJ rispetto al valore abituale indica affaticamento neuromuscolare.',
-    fields:[{key:'altezza',label:'Altezza salto',unit:'cm'},{key:'peso',label:'Peso corporeo',unit:'kg',optional:true}],
+    fields:[{key:'altezza',label:'Altezza salto',unit:'cm'},{key:'eta',label:'Età',unit:'anni compiuti',optional:true},{key:'peso',label:'Peso corporeo',unit:'kg',optional:true}],
     calc:'cmj'
   },
   {
@@ -215,7 +220,7 @@ const TESTS = [
       'CMJ: con contromovimento (come sopra).',
       'Più tentativi ciascuno: si tiene il migliore.'
     ],
-    registra:'EUR = CMJ / SJ (atteso ≥ 1,0). Valori bassi = poco sfruttamento elastico → lavoro pliometrico.',
+    registra:'EUR = CMJ / SJ. Sopra 1 il contromovimento aggiunge altezza; se non l\u2019aggiunge, rivedere tecnica o componente elastica.',
     note:'La qualità dello Squat Jump dipende dal mantenere davvero la posizione statica, senza rimbalzo.',
     fields:[{key:'cmj',label:'Altezza CMJ',unit:'cm'},{key:'sj',label:'Altezza Squat Jump',unit:'cm'}],
     calc:'eur'
@@ -247,9 +252,9 @@ const TESTS = [
       'Scegli un carico che porti al cedimento tecnico entro ~3-10 ripetizioni.',
       'Esegui con tecnica corretta fino al cedimento tecnico. Inserisci carico e ripetizioni.'
     ],
-    registra:'1RM stimato (kg) e rapporto forza/peso.',
-    note:'Affidabile fino a ~10 ripetizioni; oltre, la stima perde precisione.',
-    fields:[{key:'carico',label:'Carico sollevato',unit:'kg'},{key:'reps',label:'Ripetizioni',unit:'rip'},{key:'peso',label:'Peso corporeo',unit:'kg',optional:true}],
+    registra:'Carico e ripetizioni; dai 18 anni anche 1RM stimato (kg) e rapporto forza/peso.',
+    note:'Affidabile fino a ~10 ripetizioni; oltre, la stima perde precisione. Formule per adulti: sotto i 18 anni non si stima il massimale.',
+    fields:[{key:'carico',label:'Carico sollevato',unit:'kg'},{key:'reps',label:'Ripetizioni',unit:'rip'},{key:'eta',label:'Età',unit:'anni compiuti',optional:true},{key:'peso',label:'Peso corporeo',unit:'kg',optional:true}],
     calc:'onerm'
   },
   {
@@ -263,11 +268,11 @@ const TESTS = [
       'Pizzica la plica (pelle + grasso) ~1 cm sopra il punto; caliper perpendicolare; leggi dopo 1-2 s.',
       '2-3 misure per sito, usa la media. Uomo: petto, addome, coscia. Donna: tricipite, sovrailiaca, coscia.'
     ],
-    registra:'Somma pliche → densità → % grasso (Jackson-Pollock + Siri).',
+    registra:'Somma delle pliche; nelle età dell\u2019equazione (uomini 18-61, donne 18-55) anche densità e % grasso (Jackson-Pollock + Siri).',
     note:'Dipende molto dall\u2019operatore: atleta a riposo, non dopo l\u2019allenamento.',
     fields:[
       {key:'sesso',label:'Sesso',type:'sex'},
-      {key:'eta',label:'Età',unit:'anni'},
+      {key:'eta',label:'Età',unit:'anni compiuti',optional:true},
       {key:'p1',label:'Plica 1 (petto ♂ / tricipite ♀)',unit:'mm'},
       {key:'p2',label:'Plica 2 (addome ♂ / sovrailiaca ♀)',unit:'mm'},
       {key:'p3',label:'Plica 3 (coscia)',unit:'mm'}
@@ -276,7 +281,8 @@ const TESTS = [
   }
 ];
 
-/* fasce normative indicative (calcio adulto d'élite) per orientamento */
+/* fasce normative indicative (calcio adulto d'élite) per orientamento.
+   (1/10) Fonte ancora da documentare: si mostrano solo per stime di adulti. */
 const NORME = {
   vo2max:{ uomo:'Élite calcio ~55-65 ml/kg/min', donna:'Élite calcio ~48-56 ml/kg/min' },
   yoyo_ir1:{ uomo:'Élite ~2000-2800 m', donna:'Élite ~1200-1800 m' },
