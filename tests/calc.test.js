@@ -55,6 +55,9 @@ prova('1RM ragazzo: carico e ripetizioni, nessun massimale', r.label.startsWith(
 r = C.onerm(T('onerm'), {carico:'100', reps:'5', eta:'30'});
 prova('1RM adulto: massimale stimato', r.label==='1RM stimato' && riga(r,'1RM medio')!==undefined);
 
+r = C.onerm(T('onerm'), {carico:'80', reps:'10', eta:'30'});
+prova('1RM adulto con 10 ripetizioni: nessuna stima (Brzycki: sotto le 10)', !riga(r,'1RM medio') && /sotto le 10/.test(riga(r,'Stima')));
+
 // Pliche
 r = C.pliche(T('pliche'), {sesso:'M', eta:'15', p1:'6', p2:'8', p3:'10'});
 prova('Pliche ragazzo: solo somma', r.unita==='mm' && r.valore===24 && !riga(r,'% Massa grassa (Siri)'));

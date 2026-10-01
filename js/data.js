@@ -249,11 +249,11 @@ const TESTS = [
     setup:'Bilanciere o macchina, dischi, eventuale spotter.',
     esecuzione:[
       'Riscaldamento con 1-2 serie leggere.',
-      'Scegli un carico che porti al cedimento tecnico entro ~3-10 ripetizioni.',
+      'Scegli un carico che porti al cedimento tecnico entro 3-9 ripetizioni.',
       'Esegui con tecnica corretta fino al cedimento tecnico. Inserisci carico e ripetizioni.'
     ],
     registra:'Carico e ripetizioni; dai 18 anni anche 1RM stimato (kg) e rapporto forza/peso.',
-    note:'Affidabile fino a ~10 ripetizioni; oltre, la stima perde precisione. Formule per adulti: sotto i 18 anni non si stima il massimale.',
+    note:'La formula di Brzycki vale solo sotto le 10 ripetizioni: con 10 o più il massimale non si stima. Sotto i 18 anni non si stima il massimale.',
     fields:[{key:'carico',label:'Carico sollevato',unit:'kg'},{key:'reps',label:'Ripetizioni',unit:'rip'},{key:'eta',label:'Età',unit:'anni compiuti',optional:true},{key:'peso',label:'Peso corporeo',unit:'kg',optional:true}],
     calc:'onerm'
   },

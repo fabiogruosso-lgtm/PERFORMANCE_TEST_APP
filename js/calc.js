@@ -11,7 +11,8 @@
      fuori, la riga «Stima» dice perche' non c'e';
    - Beep test: tolta la formula 5,857·V − 19,458 (non e' nell'articolo di
      Léger); adulti 18-50 con l'equazione (3) di Léger et al. 1988, letta per
-     intero: −27,4 + 6,0·V (nell'articolo stampato −24,4 per refuso).
+     intero: −27,4 + 6,0·V (nell'articolo stampato −24,4 per refuso);
+   - 1RM: solo sotto le 10 ripetizioni (Brzycki 1993, letto).
    rev. 1 — prima versione.
 ============================================================================= */
 
@@ -29,7 +30,7 @@ const POPOLAZIONE = {
   leger:  'Léger et al. 1988: 6-17 anni equazione con l\u2019età (validata su 188 ragazzi di 8-19 anni); 18-50 anni −27,4 + 6,0·V (77 adulti). Fuori da queste età nessuna stima.',
   cooper: 'Cooper 1968: 115 militari adulti. Si calcola dai 18 anni.',
   sayers: 'Sayers et al. 1999: 108 giovani adulti. Si calcola dai 18 anni, con il peso.',
-  onerm:  'Brzycki / Epley: formule per adulti. Sotto i 18 anni si registrano carico e ripetizioni.',
+  onerm:  'Brzycki 1993: formula senza un campione dichiarato, valida solo sotto le 10 ripetizioni; Epley 1985 non letto. Si stima dai 18 anni e sotto le 10 ripetizioni; altrimenti si registrano carico e ripetizioni.',
   pliche: 'Jackson-Pollock: uomini 18-61, donne 18-55 anni, con Siri 1961. Fuori da queste età solo la somma delle pliche.'
 };
 
@@ -230,7 +231,7 @@ const CALC = {
       {label:'Ripetizioni', valore:`${rip}`}
     ];
     let media=null;
-    if(adulto(A) && rip<37){
+    if(adulto(A) && rip<10){   // Brzycki 1993: valida solo sotto le 10 ripetizioni
       const brzycki = N(w * 36 / (37 - rip));
       const epley   = N(w * (1 + rip/30));
       media = N((brzycki+epley)/2);
@@ -238,7 +239,7 @@ const CALC = {
                  {label:'1RM Epley', valore:`${epley} kg`},
                  {label:'1RM medio', valore:`${media} kg`});
       if(num(peso)) righe.push({label:'Rapporto forza/peso', valore:`${N(media/num(peso))}`});
-    } else righe.push(rigaNoStima('Massimale', A));
+    } else righe.push(rigaNoStima('Massimale', A, adulto(A) ? `${rip} ripetizioni: la formula vale sotto le 10` : null));
     righe.push({label:'Popolazione', valore:POPOLAZIONE.onerm});
     return media!==null
       ? { valore:media, unita:'kg', label:'1RM stimato', righe,
