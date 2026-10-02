@@ -12,6 +12,11 @@
    ogni equazione vale solo nella sua popolazione (vedi calc.js); formula del
    Beep test con le due equazioni di Léger 1988 (6-17 anni e 18-50 anni);
    riferimenti «élite» marcati come da documentare. rev. 1 — prima versione.
+
+   rev. 3 (2/10/2026): TOLTI i riferimenti «élite calcio» (VO2max, Yo-Yo,
+   VIFT): non avevano una fonte. I confronti con i valori pubblicati, per
+   eta', sesso e protocollo, li fa la piattaforma quando si importano i
+   risultati (core/riferimenti_campo).
 ============================================================================= */
 
 /* --- Run-Length Encoding delle velocità (km/h) per navetta ------------------
@@ -281,12 +286,4 @@ const TESTS = [
   }
 ];
 
-/* fasce normative indicative (calcio adulto d'élite) per orientamento.
-   (1/10) Fonte ancora da documentare: si mostrano solo per stime di adulti. */
-const NORME = {
-  vo2max:{ uomo:'Élite calcio ~55-65 ml/kg/min', donna:'Élite calcio ~48-56 ml/kg/min' },
-  yoyo_ir1:{ uomo:'Élite ~2000-2800 m', donna:'Élite ~1200-1800 m' },
-  vift:{ uomo:'Élite ~19-21 km/h', donna:'Élite ~17-19 km/h' }
-};
-
-window.APP_DATA = { TESTS, NORME };
+window.APP_DATA = { TESTS };

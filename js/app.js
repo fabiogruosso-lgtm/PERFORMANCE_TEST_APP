@@ -8,8 +8,12 @@
    (fonte da documentare) solo per stime di adulti; la velocita' raggiunta nel
    Beep test e nel 30-15 arriva nel modulo anche con i decimali (prima la
    virgola la faceva sparire). rev. 1 — prima versione.
+
+   rev. 3 (2/10/2026) — TOLTI dal risultato i riferimenti «élite calcio»
+   senza fonte: l'app mostra la misura; i confronti con i valori pubblicati
+   li fa la piattaforma all'importazione.
 ============================================================================= */
-/* TESTS e NORME sono già variabili globali definite in data.js:
+/* TESTS è già una variabile globale definita in data.js:
    in un browser tutti gli <script> condividono lo stesso scope, quindi
    qui NON vanno ridichiarati (causerebbe "duplicate variable"). */
 const $ = sel => document.querySelector(sel);
@@ -481,7 +485,6 @@ function fieldHtml(f, value){
 
 /* ------------------------------ RISULTATO --------------------------------- */
 function showResult(t, res){
-  const norm = normHint(t, res);
   app.innerHTML = `
     <header class="topbar"><button class="icon-btn" id="back">‹</button>
       <div class="brand">${t.icon} ${t.nome}</div><span></span></header>
@@ -489,7 +492,6 @@ function showResult(t, res){
       <div class="result-hero">
         <div class="rh-lab">${res.label}</div>
         <div class="rh-val">${res.valore}<small>${res.unita}</small></div>
-        ${norm?`<div class="rh-norm">${norm}</div>`:''}
       </div>
       <div class="result-rows">
         ${res.righe.map(r=>`<div class="rr"><span>${r.label}</span><b>${r.valore}</b></div>`).join('')}
@@ -509,16 +511,6 @@ function showResult(t, res){
     saveHistory(h);
     $('#save').textContent='✓ Salvato'; $('#save').disabled=true;
   };
-}
-
-/* (1/10) Riferimenti «élite calcio» adulto, fonte ancora da documentare: si
-   mostrano solo a chi ha 18 anni o più, mai ai ragazzi né a età non indicata. */
-function normHint(t, res){
-  if(!CALC.adulto(res.eta===undefined ? null : res.eta)) return '';
-  const nota = ' (indicativo, fonte da documentare)';
-  if(res.vo2!=null){ return `Rif. élite calcio adulto — ${NORME.vo2max.uomo} · ${NORME.vo2max.donna}${nota}`; }
-  if(t.id==='ift3015'){ return `Rif. VIFT adulti — ${NORME.vift.uomo} · ${NORME.vift.donna}${nota}`; }
-  return '';
 }
 
 /* -------------------------------- STORICO --------------------------------- */

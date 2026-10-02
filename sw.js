@@ -1,6 +1,6 @@
 /* sw.js — Service Worker: rende l'app disponibile OFFLINE
    Cambia CACHE_VERSION ad ogni aggiornamento per forzare il refresh dei file. */
-const CACHE_VERSION = 'test-atletici-v5';   // (1/10) v5: bonifica stime e dati anagrafici, 1RM sotto le 10 ripetizioni
+const CACHE_VERSION = 'test-atletici-v6';   // (2/10) v6: tolti i riferimenti «élite» senza fonte — era v5 (1/10): bonifica stime e dati anagrafici, 1RM sotto le 10 ripetizioni
 const ASSETS = [
   './',
   './index.html',
